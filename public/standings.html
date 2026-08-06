@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Standings - AO Doubles Tournament</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header>
+  <div class="header-top">
+    <h1>🏆 AO Doubles Tournament</h1>
+    <div id="authArea"></div>
+  </div>
+  <nav id="navArea"></nav>
+</header>
+<main>
+  <p class="small-note">Ranked by match points (win = 2, loss = 0), then game difference, then total games won. Match-tiebreak points don't count toward games won/lost.</p>
+  <div id="groupsContainer"></div>
+</main>
+
+<script src="/js/api.js"></script>
+<script src="/js/shared.js"></script>
+<script>
+let standingsData = [];
+
+async function loadStandings() {
+  standingsData = await Api.get('/api/standings');
+  render();
+}
+
+function onAdminLogin() { render(); }
+function onAdminLogout() { render(); }
+
+function render() {
+  const container = document.getElementById('groupsContainer');
+  container.innerHTML = standingsData.map(g => {
+    const rows = g.standings.map((s, idx) => {
+      const isConfirmed = g.confirmedWinner && g.confirmedWinner.teamCode === s.code;
+      return `
+      <tr class="${isConfirmed ? 'winner-row' : ''}">
+        <td>${idx + 1}</td>
+        <td>${s.name} <span class="pill">${s.code}</span></td>
+        <td>${s.played}</td>
+        <td>${s.wins}</td>
+        <td>${s.losses}</td>
+        <td>${s.matchPoints}</td>
+        <td>${s.gamesWon}</td>
+        <td>${s.gamesLost}</td>
+        <td>${s.gameDiff > 0 ? '+' : ''}${s.gameDiff}</td>
+        ${isConfirmed ? '<td>🏆 Qualified</td>' : '<td></td>'}
+      </tr>`;
+    }).join('');
+
+    let adminBlock = '';
+    if (isAdmin) {
+      if (g.confirmedWinner) {
+        adminBlock = `<p class="small-note">Confirmed qualifier: <b>${g.confirmedWinner.teamCode}</b> (${g.confirmedWinner.method === 'manual' ? 'manually resolved' : 'automatic'}). <button class="secondary" onclick="toggleOverride('${g.group}')">Change</button></p>
+        <div id="override-${g.group}" style="display:none;">${buildConfirmForm(g)}</div>`;
+      } else if (g.autoWinnerCode) {
+        adminBlock = `<p class="small-note">Automatic qualifier: <b>${g.autoWinnerCode}</b>.</p>
+          <button onclick="confirmWinner('${g.group}', '${g.autoWinnerCode}')">Confirm &amp; Propagate to Semifinal</button>`;
+      } else if (g.needsManualTiebreak) {
+        adminBlock = `<p class="small-note" style="color:#ffd479;">All teams tied on match points and game difference/games won - resolve by coin toss or drawing lots, then select the qualifier below.</p>
+          ${buildConfirmForm(g)}`;
+      } else {
+        adminBlock = `<p class="small-note">Waiting for all group matches to be completed.</p>`;
+      }
+    } else if (g.confirmedWinner) {
+      adminBlock = `<p class="small-note">Qualified for Semifinals: <b>${g.confirmedWinner.teamCode}</b></p>`;
+    }
+
+    return `
+      <div class="session-block">
+        <div class="session-title">Group ${g.group}</div>
+        <table class="data-table">
+          <thead><tr><th>#</th><th>Team</th><th>Played</th><th>W</th><th>L</th><th>Pts</th><th>Games Won</th><th>Games Lost</th><th>Diff</th><th></th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        ${adminBlock}
+      </div>
+    `;
+  }).join('');
+}
+
+function buildConfirmForm(g) {
+  const options = g.standings.map(s => `<option value="${s.code}">${s.name} (${s.code})</option>`).join('');
+  return `
+    <div class="field-row">
+      <label>Select qualifier</label>
+      <select id="winnerSelect-${g.group}">${options}</select>
+      <button onclick="confirmWinner('${g.group}', document.getElementById('winnerSelect-${g.group}').value)">Confirm &amp; Propagate</button>
+    </div>
+  `;
+}
+
+function toggleOverride(group) {
+  const el = document.getElementById(`override-${group}`);
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+async function confirmWinner(group, teamCode) {
+  try {
+    await Api.post(`/api/standings/${group}/confirm-winner`, { teamCode });
+    await loadStandings();
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+}
+
+(async function init() {
+  await initShared('standings');
+  await loadStandings();
+})();
+</script>
+</body>
+</html>

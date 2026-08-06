@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Teams - AO Doubles Tournament</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header>
+  <div class="header-top">
+    <h1>🏆 AO Doubles Tournament</h1>
+    <div id="authArea"></div>
+  </div>
+  <nav id="navArea"></nav>
+</header>
+<main>
+  <div id="groupsContainer"></div>
+</main>
+
+<script src="/js/api.js"></script>
+<script src="/js/shared.js"></script>
+<script>
+let teams = [];
+const GROUPS = ['A', 'B', 'C', 'D'];
+
+async function loadTeams() {
+  teams = await Api.get('/api/teams');
+  render();
+}
+
+function onAdminLogin() { render(); }
+function onAdminLogout() { render(); }
+
+function render() {
+  const container = document.getElementById('groupsContainer');
+  container.innerHTML = GROUPS.map(g => {
+    const groupTeams = teams.filter(t => t.group === g).sort((a, b) => a.slot - b.slot);
+    return `
+      <div class="session-block">
+        <div class="session-title">Group ${g}</div>
+        <table class="data-table">
+          <thead><tr><th>Code</th><th>Player 1</th><th>Player 2</th>${isAdmin ? '<th></th>' : ''}</tr></thead>
+          <tbody>
+            ${groupTeams.map(t => `
+              <tr id="row-${t.code}">
+                <td><span class="pill">${t.code}</span></td>
+                <td id="p1-${t.code}">${t.player1}</td>
+                <td id="p2-${t.code}">${t.player2}</td>
+                ${isAdmin ? `<td><button class="secondary" onclick="editTeam('${t.code}')">Edit</button></td>` : ''}
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }).join('');
+}
+
+function editTeam(code) {
+  const team = teams.find(t => t.code === code);
+  document.getElementById(`p1-${code}`).innerHTML = `<input id="edit-p1-${code}" value="${team.player1}" style="width:100%;">`;
+  document.getElementById(`p2-${code}`).innerHTML = `<input id="edit-p2-${code}" value="${team.player2}" style="width:100%;">`;
+  const row = document.getElementById(`row-${code}`);
+  const lastCell = row.querySelector('td:last-child');
+  lastCell.innerHTML = `<button onclick="saveTeam('${code}')">Save</button> <button class="secondary" onclick="render()">Cancel</button>`;
+}
+
+async function saveTeam(code) {
+  const player1 = document.getElementById(`edit-p1-${code}`).value;
+  const player2 = document.getElementById(`edit-p2-${code}`).value;
+  try {
+    await Api.patch(`/api/teams/${code}`, { player1, player2 });
+    await loadTeams();
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+}
+
+(async function init() {
+  await initShared('teams');
+  await loadTeams();
+})();
+</script>
+</body>
+</html>

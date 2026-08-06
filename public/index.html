@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AO Doubles Tournament</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header>
+  <div class="header-top">
+    <h1>🏆 AO Doubles Tournament</h1>
+    <div id="authArea"></div>
+  </div>
+  <nav id="navArea"></nav>
+</header>
+<main>
+  <div id="stageTabs" style="margin-bottom: 14px;">
+    <button onclick="renderStage('Group')" id="tabGroup">Group Stage</button>
+    <button class="secondary" onclick="renderStage('Knockout')" id="tabKnockout">Semifinals &amp; Final</button>
+  </div>
+  <div id="matchList"></div>
+</main>
+
+<script src="/js/api.js"></script>
+<script src="/js/shared.js"></script>
+<script>
+let matches = [];
+let currentStage = 'Group';
+
+async function loadMatches() {
+  matches = await Api.get('/api/matches');
+  renderStage(currentStage);
+}
+
+function renderStage(stage) {
+  currentStage = stage;
+  document.getElementById('tabGroup').className = stage === 'Group' ? '' : 'secondary';
+  document.getElementById('tabKnockout').className = stage === 'Knockout' ? '' : 'secondary';
+
+  const filtered = stage === 'Group'
+    ? matches.filter(m => m.stage === 'Group')
+    : matches.filter(m => m.stage === 'Semifinal' || m.stage === 'Final');
+
+  const list = document.getElementById('matchList');
+  list.innerHTML = filtered.map(m => {
+    const winnerName = m.status === 'completed' && m.score && m.score.winner ? m[m.score.winner].name : null;
+    const groupLabel = m.group ? `Group ${m.group} - ` : '';
+    return `
+    <div class="match-card" onclick="location.href='/match.html?m=${m.matchNumber}'">
+      <div>
+        <div class="match-meta">Match ${m.matchNumber} - ${groupLabel}${m.stage} - ${m.session || ''} - ${m.scheduledStart} to ${m.scheduledEnd}</div>
+        <div class="match-players">${m.team1.name} vs ${m.team2.name}</div>
+        ${winnerName ? `<div class="match-meta" style="color:#ffd479;">Winner: ${winnerName} 🏆</div>` : ''}
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+        <span class="badge ${m.stage}">${m.stage}</span>
+        <span class="badge ${m.status}">${m.status.replace('_',' ')}</span>
+      </div>
+    </div>
+  `;
+  }).join('') || '<p class="small-note">No matches found.</p>';
+}
+
+(async function init() {
+  await initShared('matches');
+  await loadMatches();
+})();
+</script>
+</body>
+</html>

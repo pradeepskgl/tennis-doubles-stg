@@ -45,6 +45,16 @@ function formatSetsSummary(score) {
   return parts.join(', ');
 }
 
+function formatDuration(startIso, endIso) {
+  if (!startIso || !endIso) return '';
+  const ms = new Date(endIso).getTime() - new Date(startIso).getTime();
+  if (ms < 0) return '';
+  const totalMinutes = Math.round(ms / 60000);
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
 async function loadMatches() {
   matches = await Api.get('/api/matches');
   renderStage(currentStage);
@@ -64,12 +74,14 @@ function renderStage(stage) {
     const winnerName = m.status === 'completed' && m.score && m.score.winner ? m[m.score.winner].name : null;
     const groupLabel = m.group ? `Group ${m.group} - ` : '';
     const setsSummary = (m.status === 'completed' && m.score) ? formatSetsSummary(m.score) : '';
+    const duration = m.status === 'completed' ? formatDuration(m.actualStart, m.actualEnd) : '';
     return `
     <div class="match-card" onclick="location.href='/match.html?m=${m.matchNumber}'">
       <div>
         <div class="match-meta">Match ${m.matchNumber} - ${groupLabel}${m.stage} - ${m.session || ''} - ${m.scheduledStart} to ${m.scheduledEnd}</div>
         <div class="match-players">${playerPills(m.team1.name)} <span class="small-note">vs</span> ${playerPills(m.team2.name)}</div>
-        ${setsSummary ? `<div class="match-meta" style="margin-top:4px;">${setsSummary}</div>` : ''}
+        ${setsSummary ? `<div class="match-meta" style="margin-top:4px; font-weight:700; font-size:14px; color:#e9f0ea;">${setsSummary}</div>` : ''}
+        ${duration ? `<div class="match-meta">Match time: ${duration}</div>` : ''}
         ${winnerName ? `<div class="match-meta" style="color:#ffd479;">Winner: ${winnerName} 🏆</div>` : ''}
       </div>
       <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">

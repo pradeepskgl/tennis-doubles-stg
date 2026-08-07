@@ -4,6 +4,12 @@ document.getElementById('mNum').textContent = matchNumber;
 
 const API_BASE = '/api/matches';
 
+function playerPills(teamName) {
+  const parts = (teamName || '').split(' & ');
+  if (parts.length !== 2) return teamName || '';
+  return `<span class="pill">${parts[0]}</span> &amp; <span class="pill">${parts[1]}</span>`;
+}
+
 let match = null;
 let teamsByCode = {};
 let socket = null;
@@ -102,7 +108,7 @@ function renderSchedule() {
   const groupLabel = match.group ? `Group ${match.group} - ` : '';
   view.innerHTML = `
     <div class="match-meta">${groupLabel}${match.stage} - ${match.session || ''} - ${match.scheduledStart} to ${match.scheduledEnd}</div>
-    <div class="match-players">${match.team1.name} vs ${match.team2.name}</div>
+    <div class="match-players">${playerPills(match.team1.name)} <span class="small-note">vs</span> ${playerPills(match.team2.name)}</div>
     <div class="small-note">Format: ${match.formatType === 'final' ? 'Final (Ad scoring)' : 'Group/Semifinal (No-Ad)'} · If 1-1: ${match.decidingSet === 'full_set' ? 'full 3rd set' : '10-point match tiebreak'}</div>
     ${isAdmin ? '<button class="secondary" onclick="toggleScheduleEdit()">Edit</button>' : ''}
   `;
@@ -470,7 +476,7 @@ function renderScoreboard() {
   }
 
   board.innerHTML = `
-    <div class="names">${match.team1.name} vs ${match.team2.name}</div>
+    <div class="names">${playerPills(match.team1.name)} <span class="small-note">vs</span> ${playerPills(match.team2.name)}</div>
     <div class="sets">${setsStr}</div>
     <div class="points">${pointsStr}</div>
     ${serverBlock}

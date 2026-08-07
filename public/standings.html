@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Standings - AO Doubles Tournament</title>
+<title>Standings - AO Tennis Doubles Tournament: Aug 2026</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
 <header>
   <div class="header-top">
-    <h1>🏆 AO Doubles Tournament</h1>
+    <h1>🏆 AO Tennis Doubles Tournament: Aug 2026</h1>
     <div id="authArea"></div>
   </div>
   <nav id="navArea"></nav>
@@ -57,14 +57,21 @@ function render() {
       if (g.confirmedWinner) {
         adminBlock = `<p class="small-note">Confirmed qualifier: <b>${g.confirmedWinner.teamCode}</b> (${g.confirmedWinner.method === 'manual' ? 'manually resolved' : 'automatic'}). <button class="secondary" onclick="toggleOverride('${g.group}')">Change</button></p>
         <div id="override-${g.group}" style="display:none;">${buildConfirmForm(g)}</div>`;
-      } else if (g.autoWinnerCode) {
-        adminBlock = `<p class="small-note">Automatic qualifier: <b>${g.autoWinnerCode}</b>.</p>
-          <button onclick="confirmWinner('${g.group}', '${g.autoWinnerCode}')">Confirm &amp; Propagate to Semifinal</button>`;
-      } else if (g.needsManualTiebreak) {
-        adminBlock = `<p class="small-note" style="color:#ffd479;">All teams tied on match points and game difference/games won - resolve by coin toss or drawing lots, then select the qualifier below.</p>
-          ${buildConfirmForm(g)}`;
       } else {
-        adminBlock = `<p class="small-note">Waiting for all group matches to be completed.</p>`;
+        if (g.autoWinnerCode) {
+          adminBlock += `<p class="small-note">Automatic qualifier: <b>${g.autoWinnerCode}</b>.</p>
+            <button onclick="confirmWinner('${g.group}', '${g.autoWinnerCode}')">Confirm &amp; Propagate to Semifinal</button>`;
+        } else if (g.needsManualTiebreak) {
+          adminBlock += `<p class="small-note" style="color:#ffd479;">All teams tied on match points and game difference/games won - resolve by coin toss or drawing lots, then select the qualifier below.</p>
+            ${buildConfirmForm(g)}`;
+        } else {
+          adminBlock += `<p class="small-note">Waiting for all group matches to be completed.
+            <button class="secondary" onclick="toggleOverride('${g.group}')">Manually promote a team instead</button></p>
+            <div id="override-${g.group}" style="display:none;">
+              <p class="small-note" style="color:#ffd479;">This group still has matches pending - only override this if you're certain (e.g. a team must withdraw).</p>
+              ${buildConfirmForm(g)}
+            </div>`;
+        }
       }
     } else if (g.confirmedWinner) {
       adminBlock = `<p class="small-note">Qualified for Semifinals: <b>${g.confirmedWinner.teamCode}</b></p>`;
@@ -73,10 +80,12 @@ function render() {
     return `
       <div class="session-block">
         <div class="session-title">Group ${g.group}</div>
-        <table class="data-table">
-          <thead><tr><th>#</th><th>Team</th><th>Played</th><th>W</th><th>L</th><th>Pts</th><th>Games Won</th><th>Games Lost</th><th>Diff</th><th></th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th>#</th><th>Team</th><th>Played</th><th>W</th><th>L</th><th>Pts</th><th>Games Won</th><th>Games Lost</th><th>Diff</th><th></th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
         ${adminBlock}
       </div>
     `;

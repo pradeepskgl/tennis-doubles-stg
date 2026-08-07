@@ -7,7 +7,7 @@ const API_BASE = '/api/matches';
 function playerPills(teamName) {
   const parts = (teamName || '').split(' & ');
   if (parts.length !== 2) return teamName || '';
-  return `<span class="pill">${parts[0]}</span> &amp; <span class="pill">${parts[1]}</span>`;
+  return `<span class="pill">${parts[0]}</span><span class="amp">&amp;</span><span class="pill">${parts[1]}</span>`;
 }
 
 let match = null;

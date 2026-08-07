@@ -114,7 +114,19 @@ function renderSchedule() {
   `;
 
   const edit = document.getElementById('scheduleEdit');
+  const t1 = teamsByCode[match.team1.code];
+  const t2 = teamsByCode[match.team2.code];
+  const playersEditable = !!(t1 && t2);
   edit.innerHTML = `
+    ${playersEditable ? `
+    <div class="field-row"><label>${match.team1.name}</label>
+      <input id="editT1P1" value="${t1.player1}" style="width:130px;">
+      <input id="editT1P2" value="${t1.player2}" style="width:130px;">
+    </div>
+    <div class="field-row"><label>${match.team2.name}</label>
+      <input id="editT2P1" value="${t2.player1}" style="width:130px;">
+      <input id="editT2P2" value="${t2.player2}" style="width:130px;">
+    </div>` : ''}
     <div class="field-row"><label>Session</label><input id="sessionInput" value="${match.session || ''}"></div>
     <div class="field-row"><label>Start time</label><input id="startInput" value="${match.scheduledStart}"></div>
     <div class="field-row"><label>End time</label><input id="endInput" value="${match.scheduledEnd}"></div>
@@ -138,6 +150,19 @@ function toggleScheduleEdit() {
 
 async function saveSchedule() {
   try {
+    const t1P1El = document.getElementById('editT1P1');
+    if (t1P1El) {
+      await Api.patch(`/api/teams/${match.team1.code}`, {
+        player1: t1P1El.value,
+        player2: document.getElementById('editT1P2').value
+      });
+      await Api.patch(`/api/teams/${match.team2.code}`, {
+        player1: document.getElementById('editT2P1').value,
+        player2: document.getElementById('editT2P2').value
+      });
+      await loadTeams();
+    }
+
     const body = {
       session: document.getElementById('sessionInput').value,
       scheduledStart: document.getElementById('startInput').value,

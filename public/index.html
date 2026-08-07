@@ -27,8 +27,6 @@
 <script>
 let matches = [];
 let currentStage = 'Group';
-let teamsByCode = {};
-let editingMatch = null;
 
 function playerPills(teamName) {
   const parts = (teamName || '').split(' & ');
@@ -57,63 +55,9 @@ function formatDuration(startIso, endIso) {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
-async function loadTeams() {
-  const teams = await Api.get('/api/teams');
-  teamsByCode = {};
-  teams.forEach(t => { teamsByCode[t.code] = t; });
-}
-
 async function loadMatches() {
   matches = await Api.get('/api/matches');
   renderStage(currentStage);
-}
-
-function onAdminLogin() { renderStage(currentStage); }
-function onAdminLogout() { editingMatch = null; renderStage(currentStage); }
-
-function toggleEditPlayers(matchNumber, event) {
-  event.stopPropagation();
-  editingMatch = editingMatch === matchNumber ? null : matchNumber;
-  renderStage(currentStage);
-}
-
-function editPlayersForm(m, event) {
-  const t1 = teamsByCode[m.team1.code];
-  const t2 = teamsByCode[m.team2.code];
-  if (!t1 || !t2) return '';
-  return `
-    <div class="session-block" onclick="event.stopPropagation()" style="margin-top:8px;">
-      <div class="field-row"><label>${m.team1.name}</label>
-        <input id="edit-${m.matchNumber}-t1p1" value="${t1.player1}" style="width:120px;">
-        <input id="edit-${m.matchNumber}-t1p2" value="${t1.player2}" style="width:120px;">
-      </div>
-      <div class="field-row"><label>${m.team2.name}</label>
-        <input id="edit-${m.matchNumber}-t2p1" value="${t2.player1}" style="width:120px;">
-        <input id="edit-${m.matchNumber}-t2p2" value="${t2.player2}" style="width:120px;">
-      </div>
-      <button onclick="event.stopPropagation(); savePlayerNames(${m.matchNumber})">Save</button>
-      <button class="secondary" onclick="event.stopPropagation(); editingMatch=null; renderStage(currentStage);">Cancel</button>
-      <div id="edit-${m.matchNumber}-error" class="error-msg"></div>
-    </div>
-  `;
-}
-
-async function savePlayerNames(matchNumber) {
-  const m = matches.find(x => x.matchNumber === matchNumber);
-  try {
-    const t1p1 = document.getElementById(`edit-${matchNumber}-t1p1`).value;
-    const t1p2 = document.getElementById(`edit-${matchNumber}-t1p2`).value;
-    const t2p1 = document.getElementById(`edit-${matchNumber}-t2p1`).value;
-    const t2p2 = document.getElementById(`edit-${matchNumber}-t2p2`).value;
-    await Api.patch(`/api/teams/${m.team1.code}`, { player1: t1p1, player2: t1p2 });
-    await Api.patch(`/api/teams/${m.team2.code}`, { player1: t2p1, player2: t2p2 });
-    editingMatch = null;
-    await loadTeams();
-    await loadMatches();
-  } catch (e) {
-    const errEl = document.getElementById(`edit-${matchNumber}-error`);
-    if (errEl) errEl.textContent = e.message;
-  }
 }
 
 function renderStage(stage) {
@@ -131,18 +75,14 @@ function renderStage(stage) {
     const groupLabel = m.group ? `Group ${m.group} - ` : '';
     const setsSummary = (m.status === 'completed' && m.score) ? formatSetsSummary(m.score) : '';
     const duration = m.status === 'completed' ? formatDuration(m.actualStart, m.actualEnd) : '';
-    const canEditPlayers = isAdmin && m.team1.code && m.team2.code;
     return `
     <div class="match-card" onclick="location.href='/match.html?m=${m.matchNumber}'">
       <div style="flex:1; min-width:0;">
         <div class="match-meta">Match ${m.matchNumber} - ${groupLabel}${m.stage} - ${m.session || ''} - ${m.scheduledStart} to ${m.scheduledEnd}</div>
-        <div class="match-players">${playerPills(m.team1.name)} <span class="small-note">vs</span> ${playerPills(m.team2.name)}
-          ${canEditPlayers ? `<button class="secondary" style="padding:2px 8px; font-size:11px;" onclick="toggleEditPlayers(${m.matchNumber}, event)">Edit players</button>` : ''}
-        </div>
+        <div class="match-players">${playerPills(m.team1.name)} <span class="small-note">vs</span> ${playerPills(m.team2.name)}</div>
         ${setsSummary ? `<div class="match-meta" style="margin-top:4px; font-weight:700; font-size:14px; color:#e9f0ea;">${setsSummary}</div>` : ''}
         ${duration ? `<div class="match-meta">Match time: ${duration}</div>` : ''}
         ${winnerName ? `<div class="match-meta" style="color:#ffd479;">Winner: ${winnerName} 🏆</div>` : ''}
-        ${editingMatch === m.matchNumber ? editPlayersForm(m) : ''}
       </div>
       <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
         <span class="badge ${m.status}">${m.status.replace('_',' ')}</span>
@@ -154,7 +94,6 @@ function renderStage(stage) {
 
 (async function init() {
   await initShared('matches', true);
-  await loadTeams();
   await loadMatches();
 })();
 </script>

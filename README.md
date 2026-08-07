@@ -39,8 +39,20 @@ npm run seed
 npm start
 ```
 
-Visit `http://localhost:3001`. First-time admin passcode setup works exactly like the singles
-app — set it once on any page, it can never be changed again for this deployment.
+The app is accessed through **two separate URLs**, for two different audiences:
+
+- **`http://localhost:3001`** (or your deployed domain) — the public pages: Matches, Standings,
+  Teams. Anyone can view live scores, standings, and team info here. No login is shown or needed
+  on these pages.
+- **`http://localhost:3001/admin`** — the dedicated admin login page. This is where the
+  tournament organizer sets the passcode the very first time (one-time only - it can never be
+  changed again for this deployment), and logs in on subsequent visits. Once logged in here, the
+  same browser session carries admin access back over to the Matches/Standings/Teams pages
+  automatically (via a session cookie) - a small "Admin session active" indicator with a Logout
+  button appears in their header instead of a login form.
+
+In practice: share the plain root URL with spectators/players, and keep the `/admin` URL private
+to whoever is running the scoring table.
 
 ## 3. Teams & schedule (from the rulebook)
 

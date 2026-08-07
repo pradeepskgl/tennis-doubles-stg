@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin Login - AO Tennis Doubles Tournament: Aug 2026</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header>
+  <div class="header-top">
+    <h1>🏆 AO Tennis Doubles Tournament: Aug 2026</h1>
+  </div>
+  <nav id="navArea"></nav>
+</header>
+<main style="max-width: 420px;">
+
+  <div class="session-block" id="statusBlock" style="display:none;">
+    <div class="session-title">Admin session active</div>
+    <p class="small-note">You're logged in as admin.</p>
+    <button onclick="location.href='/'">Go to Matches</button>
+    <button class="secondary" onclick="doLogoutAndRefresh()">Logout</button>
+  </div>
+
+  <div class="session-block" id="setupBlock" style="display:none;">
+    <div class="session-title">One-time admin setup</div>
+    <p class="small-note">No admin passcode has been set for this deployment yet. Set one now - this can only be done once.</p>
+    <div class="field-row">
+      <input id="setupPasscode" type="password" placeholder="Choose a passcode (min 4 chars)" style="flex:1;">
+    </div>
+    <button onclick="doSetupAndRefresh()">Set Passcode</button>
+    <div id="setupError" class="error-msg"></div>
+  </div>
+
+  <div class="session-block" id="loginBlock" style="display:none;">
+    <div class="session-title">Admin login</div>
+    <div class="field-row">
+      <input id="loginPasscode" type="password" placeholder="Enter passcode" style="flex:1;" onkeydown="if(event.key==='Enter') doLoginAndRefresh();">
+    </div>
+    <button onclick="doLoginAndRefresh()">Login</button>
+    <div id="loginError" class="error-msg"></div>
+  </div>
+
+</main>
+
+<script src="/js/api.js"></script>
+<script src="/js/shared.js"></script>
+<script>
+function renderAdminPage() {
+  document.getElementById('statusBlock').style.display = isAdmin ? 'block' : 'none';
+  document.getElementById('setupBlock').style.display = (!isAdmin && !setupComplete) ? 'block' : 'none';
+  document.getElementById('loginBlock').style.display = (!isAdmin && setupComplete) ? 'block' : 'none';
+}
+
+async function doSetupAndRefresh() {
+  const passcode = document.getElementById('setupPasscode').value;
+  try {
+    await Api.post('/api/auth/setup', { passcode });
+    setupComplete = true;
+    await doLoginWithPasscode(passcode);
+  } catch (e) {
+    document.getElementById('setupError').textContent = e.message;
+  }
+}
+
+async function doLoginWithPasscode(passcode) {
+  try {
+    await Api.post('/api/auth/login', { passcode });
+    isAdmin = true;
+    renderAdminPage();
+  } catch (e) {
+    document.getElementById('loginError').textContent = e.message;
+    renderAdminPage();
+  }
+}
+
+async function doLoginAndRefresh() {
+  const passcode = document.getElementById('loginPasscode').value;
+  await doLoginWithPasscode(passcode);
+}
+
+async function doLogoutAndRefresh() {
+  await doLogout();
+  renderAdminPage();
+}
+
+(async function init() {
+  renderNav(null);
+  await checkAuth();
+  await checkSetup();
+  renderAdminPage();
+})();
+</script>
+</body>
+</html>

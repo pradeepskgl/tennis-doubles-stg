@@ -32,16 +32,6 @@ function renderAuthArea() {
   const el = document.getElementById('authArea');
   if (!el) return;
 
-  if (!setupComplete) {
-    el.innerHTML = `
-      <span class="small-note">Set admin passcode:</span>
-      <input id="setupPasscode" type="password" placeholder="Min 4 chars" style="width:140px;">
-      <button onclick="doSetup()">Set Passcode</button>
-      <span id="setupError" class="error-msg"></span>
-    `;
-    return;
-  }
-
   if (isAdmin) {
     el.innerHTML = `
       <span class="small-note">Admin session active</span>
@@ -50,11 +40,7 @@ function renderAuthArea() {
     return;
   }
 
-  el.innerHTML = `
-    <input id="loginPasscode" type="password" placeholder="Admin passcode" style="width:140px;" onkeydown="if(event.key==='Enter') doLogin();">
-    <button onclick="doLogin()">Login</button>
-    <span id="loginError" class="error-msg"></span>
-  `;
+  el.innerHTML = `<a href="/admin" class="small-note">Admin login</a>`;
 }
 
 async function doSetup() {

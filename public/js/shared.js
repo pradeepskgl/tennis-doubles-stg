@@ -1,5 +1,6 @@
 let isAdmin = false;
 let setupComplete = true;
+let hideLoginLinkOnThisPage = false;
 
 async function checkAuth() {
   try {
@@ -28,7 +29,7 @@ function renderNav(active) {
   ).join('');
 }
 
-function renderAuthArea() {
+function renderAuthArea(hideLoginLink) {
   const el = document.getElementById('authArea');
   if (!el) return;
 
@@ -40,7 +41,7 @@ function renderAuthArea() {
     return;
   }
 
-  el.innerHTML = `<a href="/admin" class="small-note">Admin login</a>`;
+  el.innerHTML = hideLoginLink ? '' : `<a href="/admin" class="small-note">Admin login</a>`;
 }
 
 async function doSetup() {
@@ -59,7 +60,7 @@ async function doLogin() {
   try {
     await Api.post('/api/auth/login', { passcode });
     isAdmin = true;
-    renderAuthArea();
+    renderAuthArea(hideLoginLinkOnThisPage);
     if (typeof onAdminLogin === 'function') onAdminLogin();
   } catch (e) {
     document.getElementById('loginError').textContent = e.message;
@@ -69,13 +70,14 @@ async function doLogin() {
 async function doLogout() {
   await Api.post('/api/auth/logout');
   isAdmin = false;
-  renderAuthArea();
+  renderAuthArea(hideLoginLinkOnThisPage);
   if (typeof onAdminLogout === 'function') onAdminLogout();
 }
 
-async function initShared(activePage) {
+async function initShared(activePage, hideLoginLink) {
+  hideLoginLinkOnThisPage = !!hideLoginLink;
   await checkAuth();
   await checkSetup();
   renderNav(activePage);
-  renderAuthArea();
+  renderAuthArea(hideLoginLinkOnThisPage);
 }

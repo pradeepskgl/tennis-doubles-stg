@@ -98,7 +98,7 @@ router.delete('/:matchNumber/lock', requireAuth, loadMatch, async (req, res) => 
 
 router.patch('/:matchNumber/schedule', requireAuth, loadMatch, requireLockOwnership, async (req, res) => {
   const match = req.match;
-  const { scheduledStart, scheduledEnd, session, decidingSet, expectedVersion } = req.body;
+  const { scheduledStart, scheduledEnd, session, decidingSet, formatType, expectedVersion } = req.body;
 
   if (typeof expectedVersion === 'number' && expectedVersion !== match.version) {
     return res.status(409).json({ error: 'Match was updated elsewhere. Please reload.', match });
@@ -108,6 +108,20 @@ router.patch('/:matchNumber/schedule', requireAuth, loadMatch, requireLockOwners
   if (scheduledEnd !== undefined) match.scheduledEnd = scheduledEnd;
   if (session !== undefined) match.session = session;
   if (decidingSet !== undefined && ['match_tiebreak', 'full_set'].includes(decidingSet)) match.decidingSet = decidingSet;
+
+  // Game format is only choosable for Semifinal matches (Group is always No-Ad per the
+  // rulebook; Final is always the Regular/Ad-scoring format). It also can't be changed
+  // once the match has started, since switching scoring rules mid-match would corrupt
+  // the in-progress score.
+  if (formatType !== undefined && ['group', 'final'].includes(formatType)) {
+    if (match.stage !== 'Semifinal') {
+      return res.status(400).json({ error: 'Game format can only be changed for Semifinal matches.' });
+    }
+    if (match.status === 'in_progress' || match.status === 'completed') {
+      return res.status(400).json({ error: 'Game format cannot be changed after the match has started.' });
+    }
+    match.formatType = formatType;
+  }
 
   match.version += 1;
   await match.save();

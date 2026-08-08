@@ -69,11 +69,20 @@ document labels the last Group B match "B1 vs B3", but the listed players are ac
 this was corrected in the seed data so each of the 3 possible Group B pairings (1v2, 1v3, 2v3)
 appears exactly once, matching every other group.
 
-**Semifinals**: the source document doesn't specify the SF pairing beyond "group winners advance."
-Seeded as SF1 = Winner Group A vs Winner Group B, SF2 = Winner Group C vs Winner Group D — edit
-freely from the Matches page if you intended a different pairing (e.g. A vs D, B vs C).
+**Semifinals**: SF1 = Winner Group A vs Winner Group D, SF2 = Winner Group B vs Winner Group C
+(matchNumber 13 and 14 respectively). This pairing is fixed in the seed data.
 
 **Final**: Winner SF1 vs Winner SF2, format/times editable.
+
+> **Upgrading an existing deployment?** If you already ran the seed before this pairing was
+> corrected (it used to be A vs B, C vs D), running `npm install`/`npm run seed` again won't fix
+> already-created matches, since seeding never overwrites existing data. Run this once instead:
+> ```bash
+> npm run fix-semifinal-pairing
+> ```
+> It corrects matches 13/14 to the right pairing and re-propagates any already-confirmed group
+> winners into the right slot. It refuses to touch either Semifinal match if it has already started
+> or completed under the old pairing (prints a warning instead) - safe to run more than once.
 
 ## 4. Menus
 
@@ -106,13 +115,21 @@ freely from the Matches page if you intended a different pairing (e.g. A vs D, B
 
 ## 6. Scoring rules implemented
 
-**Group Stage + Semifinals** (No-Ad):
+**Group Stage** (No-Ad, fixed - not editable):
 - No-Ad game scoring (sudden deciding point at 40-40)
 - Sets: first to 6 games, win by 2
 - At 6-6: 7-point tiebreak, **no win-by-2 required** — first to 7 wins outright
 - Sets split 1-1: 10-point match tiebreak (win by 2) decides the match — there is never a real 3rd set
 
-**Final** (Ad scoring):
+**Semifinals** (admin's choice, editable per match before it starts — from the Edit panel next to
+session/time on that match's page):
+- **Option 1 - No-Ad** (the default): identical rules to the Group Stage above.
+- **Option 2 - Regular / Ad-scoring**: identical rules to the Final, below, including the choice of
+  match tiebreak vs. a full 3rd set if sets split 1-1.
+- Once a Semifinal match has started (coin toss done and scoring underway), the format locks and
+  can no longer be changed, to avoid switching scoring rules mid-match.
+
+**Final** (Ad scoring, fixed):
 - Traditional advantage scoring
 - Sets: first to 6 games, win by 2
 - At 6-6: 7-point tiebreak, **win by 2 required**

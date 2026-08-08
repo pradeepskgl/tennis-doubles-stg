@@ -117,6 +117,8 @@ function renderSchedule() {
   const t1 = teamsByCode[match.team1.code];
   const t2 = teamsByCode[match.team2.code];
   const playersEditable = !!(t1 && t2);
+  const notStarted = match.status === 'scheduled' || match.status === 'toss_done';
+  const formatEditable = match.stage === 'Semifinal' && notStarted;
   edit.innerHTML = `
     ${playersEditable ? `
     <div class="field-row"><label>${match.team1.name}</label>
@@ -130,8 +132,16 @@ function renderSchedule() {
     <div class="field-row"><label>Session</label><input id="sessionInput" value="${match.session || ''}"></div>
     <div class="field-row"><label>Start time</label><input id="startInput" value="${match.scheduledStart}"></div>
     <div class="field-row"><label>End time</label><input id="endInput" value="${match.scheduledEnd}"></div>
-    ${match.stage === 'Final' ? `
-    <div class="field-row"><label>If sets tie 1-1</label>
+    ${formatEditable ? `
+    <div class="field-row"><label>Game format</label>
+      <select id="formatTypeInput" onchange="onFormatTypeChange()">
+        <option value="group" ${match.formatType === 'group' ? 'selected' : ''}>Option 1: No-Ad (Group-style)</option>
+        <option value="final" ${match.formatType === 'final' ? 'selected' : ''}>Option 2: Regular / Ad-scoring (Final-style)</option>
+      </select>
+    </div>` : ''}
+    ${(match.stage === 'Final' || formatEditable) ? `
+    <div class="field-row" id="decidingSetRow">
+      <label>If sets tie 1-1</label>
       <select id="decidingSetInput">
         <option value="match_tiebreak" ${match.decidingSet === 'match_tiebreak' ? 'selected' : ''}>10-Point Match Tiebreak</option>
         <option value="full_set" ${match.decidingSet === 'full_set' ? 'selected' : ''}>Full 3rd Set</option>
@@ -141,6 +151,16 @@ function renderSchedule() {
     <button class="secondary" onclick="toggleScheduleEdit()">Cancel</button>
     <div id="scheduleError" class="error-msg"></div>
   `;
+  if (formatEditable) onFormatTypeChange();
+}
+
+function onFormatTypeChange() {
+  const formatEl = document.getElementById('formatTypeInput');
+  const row = document.getElementById('decidingSetRow');
+  if (!formatEl || !row) return;
+  // Deciding-set choice (match tiebreak vs full 3rd set) only applies to the
+  // Regular/Ad-scoring format - Option 1 (No-Ad) always uses a match tiebreak per the rulebook.
+  row.style.display = formatEl.value === 'final' ? 'flex' : 'none';
 }
 
 function toggleScheduleEdit() {
@@ -171,6 +191,8 @@ async function saveSchedule() {
     };
     const decidingEl = document.getElementById('decidingSetInput');
     if (decidingEl) body.decidingSet = decidingEl.value;
+    const formatEl = document.getElementById('formatTypeInput');
+    if (formatEl) body.formatType = formatEl.value;
     const res = await Api.patch(`${API_BASE}/${matchNumber}/schedule`, body);
     match = res.match;
     toggleScheduleEdit();

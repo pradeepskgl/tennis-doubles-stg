@@ -42,12 +42,10 @@ const matchesRaw = [
   [12, 'Group', 'B', 'B1', 'B2', '9:00 PM', '10:00 PM', 'Evening']
 ];
 
-// Semifinal pairing: not specified in the source document beyond "top team from
-// each group qualifies for the Semi-finals". Using a standard cross-pairing
-// (A vs B, C vs D); edit team assignments freely from the Matches page once seeded.
+// Semifinal pairing: Winner Group A vs Winner Group D, Winner Group B vs Winner Group C (fixed).
 const semifinalsRaw = [
-  [13, 'Semifinal', null, 'A', 'B', 'TBD', 'TBD', 'TBD'],
-  [14, 'Semifinal', null, 'C', 'D', 'TBD', 'TBD', 'TBD']
+  [13, 'Semifinal', null, 'A', 'D', 'TBD', 'TBD', 'TBD'],
+  [14, 'Semifinal', null, 'B', 'C', 'TBD', 'TBD', 'TBD']
 ];
 
 async function seedData() {

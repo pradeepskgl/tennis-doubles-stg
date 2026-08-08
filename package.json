@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "seed": "node utils/seedData.js",
+    "fix-semifinal-pairing": "node utils/fixSemifinalPairing.js",
     "postinstall": "node utils/seedData.js || true"
   },
   "dependencies": {
